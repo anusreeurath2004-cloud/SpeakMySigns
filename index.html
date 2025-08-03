@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sign Language Interpreter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --primary-light: #34495e;
+      --accent: #3498db;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --text-dark: #2c3e50;
+      --text-light: #ecf0f1;
+      --bg-main: #ecf0f1;
+      --bg-card: #ffffff;
+      --border-color: #bdc3c7;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: var(--bg-main);
+      height: 100vh;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      padding: 0.8rem;
+      text-align: center;
+      border-radius: 10px;
+      margin-bottom: 0.8rem;
+    }
+
+    .header h2 {
+      color: var(--text-light);
+      font-size: 1.6rem;
+      margin-bottom: 0.2rem;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .header p {
+      color: var(--text-light);
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    #container {
+      display: flex;
+      gap: 1rem;
+      flex: 1;
+      width: 98%;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      padding: 1rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+      height: calc(100vh - 110px);
+    }
+
+    .video-container {
+      flex: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    video {
+      width: auto;
+      max-width: 100%;
+      height: calc(100vh - 250px);
+      border-radius: 10px;
+      border: 3px solid var(--primary);
+      background: #000;
+      object-fit: contain;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    button {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    #start-btn {
+      background: var(--accent);
+      color: var(--text-light);
+      flex: 2;
+      font-weight: 600;
+    }
+
+    #abort-btn {
+      background: var(--danger);
+      color: var(--text-light);
+      flex: 1;
+      font-weight: 600;
+    }
+
+    #start-btn:hover {
+      background: var(--primary);
+    }
+
+    #abort-btn:hover {
+      background: #c0392b;
+    }
+
+    button:disabled {
+      background: var(--border-color);
+      opacity: 0.7;
+      font-weight: 400;
+      cursor: not-allowed;
+    }
+
+    #result {
+      padding: 0.8rem;
+      border-radius: 8px;
+      background: var(--bg-main);
+      min-height: 2.5rem;
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      color: var(--text-dark);
+      border-left: 4px solid var(--accent);
+    }
+
+    #prediction-log {
+      width: 280px;
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #prediction-log h3 {
+      color: var(--primary);
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.4rem;
+    }
+
+    #log-content {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    #log-content::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #log-content::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+
+    #log-content::-webkit-scrollbar-thumb {
+      background: var(--accent);
+    }
+
+    .log-entry {
+      margin-bottom: 0.8rem;
+      padding: 0.6rem;
+      background: var(--bg-main);
+      border-radius: 6px;
+      border-left: 4px solid var(--primary);
+      font-size: 0.85rem;
+      color: var(--text-dark);
+      transition: all 0.3s ease;
+    }
+
+    .log-entry:hover {
+      transform: translateX(5px);
+      border-left-color: var(--accent);
+    }
+
+    .log-entry.sentence {
+      border-left-color: var(--success);
+      background: #f0faf0;
+      color: var(--success);
+    }
+
+    #tts-audio {
+      width: 100%;
+      height: 35px;
+      border-radius: 8px;
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-indicator.status-active {
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,174,239,0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(0,174,239,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,174,239,0); }
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h2>Sign Language Interpreter</h2>
+    <p>Use hand gestures to communicate and generate meaningful sentences</p>
+  </div>
+
+  <div id="container">
+    <div class="video-container">
+      <video id="video" autoplay></video>
+      <div class="controls">
+        <button id="start-btn">
+          <span class="status-indicator"></span>
+          Start Recognition
+        </button>
+        <button id="abort-btn" disabled>Stop</button>
+      </div>
+      <div id="result"></div>
+      <audio id="tts-audio" controls style="display: none;"></audio>
+    </div>
+
+    <div id="prediction-log">
+      <h3>Recognition History</h3>
+      <div id="log-content"></div>
+    </div>
+  </div>
+
+<script>
+  const video = document.getElementById('video');
+  const resultText = document.getElementById('result');
+  const startBtn = document.getElementById('start-btn');
+  const abortBtn = document.getElementById('abort-btn');
+  const logContent = document.getElementById('log-content');
+
+  let abortRequested = false;
+  let openHandDetected = false;
+  let predictionList = [];
+
+  // Access webcam
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => { video.srcObject = stream; })
+    .catch(err => console.error("Webcam error:", err));
+
+  function captureFrame() {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg');
+  }
+
+  function isOpenHand(landmarks) {
+    const tips = [8, 12, 16, 20];
+    const mids = [6, 10, 14, 18];
+    return !tips.every((tip, i) => landmarks[tip].y > landmarks[mids[i]].y);
+  }
+
+  async function countdown(seconds) {
+    for (let i = seconds; i > 0; i--) {
+      resultText.textContent = `Starting in ${i}...`;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+
+  function addToPredictionLog(text) {
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.textContent = text;
+    logContent.appendChild(entry);
+    logContent.scrollTop = logContent.scrollHeight;
+  }
+
+  function clearPredictionLog() {
+    logContent.innerHTML = '';
+    predictionList = [];
+  }
+
+  async function predictOnce() {
+    const frames = [];
+    for (let i = 0; i < 30; i++) {
+      if (abortRequested) return;
+      resultText.textContent = `Capturing ${i + 1}/30`;
+      frames.push(captureFrame());
+      await new Promise(r => setTimeout(r, 90));
+    }
+
+    resultText.textContent = 'Sending to server...';
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frames })
+      });
+      const data = await res.json();
+      const predictionText = data.prediction 
+        ? `Predicted Sign: ${data.prediction}` 
+        : `Error: ${data.error}`;
+      resultText.textContent = predictionText;
+      if (data.prediction) {
+        predictionList.push(data.prediction);
+        addToPredictionLog(data.prediction);
+      }
+    } catch (err) {
+      console.error(err);
+      resultText.textContent = 'Error predicting sign.';
+    }
+  }
+
+  async function continuousPredict() {
+    abortRequested = false;
+    startBtn.disabled = true;
+    abortBtn.disabled = false;
+    clearPredictionLog();
+
+    while (!abortRequested) {
+      await countdown(3);
+      if (abortRequested) break;
+
+      await predictOnce();
+      if (abortRequested) break;
+
+      resultText.textContent = "Waiting... show open hand to abort";
+      openHandDetected = false;
+      const detectionStart = Date.now();
+      while (Date.now() - detectionStart < 3000) {
+        if (openHandDetected) {
+          abortRequested = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
+    }
+
+    startBtn.disabled = false;
+    abortBtn.disabled = true;
+
+    if (abortRequested && predictionList.length > 0) {
+      resultText.textContent = 'Prediction aborted. Generating sentence...';
+      await generateSentence(predictionList);
+    } else {
+      resultText.textContent = 'Prediction stopped.';
+    }
+  }
+
+  async function generateSentence(words) {
+    try {
+        const res = await fetch('/generate_sentence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ words })
+        });
+        const data = await res.json();
+        if (data.sentence) {
+            resultText.textContent = data.sentence;
+
+            // Play the audio if available
+            if (data.audio_url) {
+                const audio = document.getElementById('tts-audio');
+                audio.style.display = 'block';
+                audio.src = data.audio_url;
+                audio.play();
+            }
+        } else {
+            resultText.textContent = 'Error generating sentence.';
+        }
+    } catch (err) {
+        console.error(err);
+        resultText.textContent = 'Error generating sentence.';
+    }
+  }
+
+  startBtn.addEventListener('click', continuousPredict);
+  abortBtn.addEventListener('click', () => { abortRequested = true; });
+
+  // MediaPipe Hands Setup
+  const hands = new Hands({
+    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.7
+  });
+
+  hands.onResults(results => {
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      const landmarks = results.multiHandLandmarks[0];
+      openHandDetected = isOpenHand(landmarks);
+    } else {
+      openHandDetected = false;
+    }
+  });
+
+  const camera = new Camera(video, {
+    onFrame: async () => {
+      await hands.send({ image: video });
+    },
+    width: 480,    /* Changed to 4:3 aspect ratio */
+    height: 360    /* Changed to maintain proportions */
+  });
+  camera.start();
+</script>
+
+</body>
+</html>
